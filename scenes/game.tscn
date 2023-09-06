@@ -1,9 +1,14 @@
-[gd_scene load_steps=5 format=3 uid="uid://cruh8bbcfvyvr"]
+[gd_scene load_steps=10 format=3 uid="uid://cruh8bbcfvyvr"]
 
 [ext_resource type="Texture2D" uid="uid://brp4euwugc18f" path="res://assets/background.png" id="1_blg2x"]
 [ext_resource type="PackedScene" uid="uid://bt33j5dwxano3" path="res://scenes/top_ui.tscn" id="2_wrbvl"]
 [ext_resource type="Texture2D" uid="uid://cdunkljd6up72" path="res://assets/bottom_ui.png" id="3_jy0d4"]
 [ext_resource type="Script" path="res://scripts/grid.gd" id="4_4jr62"]
+[ext_resource type="PackedScene" uid="uid://b3rmttwrvmtug" path="res://scenes/game_over_panel.tscn" id="5_v3y64"]
+[ext_resource type="Script" path="res://scenes/GoalHolder.gd" id="6_r6nci"]
+[ext_resource type="PackedScene" uid="uid://q1g11nhlwcak" path="res://scenes/canvas_layer.tscn" id="6_vq388"]
+[ext_resource type="PackedScene" uid="uid://camlsxsmycty5" path="res://scenes/node.tscn" id="7_x0tq7"]
+[ext_resource type="AudioStream" uid="uid://binwsvu80rtuo" path="res://assets/yeah.mp3" id="9_dc5b5"]
 
 [node name="Game" type="Node2D"]
 
@@ -28,6 +33,11 @@ x_start = 64
 y_start = 800
 offset = 64
 y_offset = 2
+piece_value = 30
+current_counter_value = 1
+is_moves = true
+
+[node name="Timer" type="Timer" parent="grid"]
 
 [node name="destroy_timer" type="Timer" parent="."]
 wait_time = 0.5
@@ -41,6 +51,29 @@ one_shot = true
 wait_time = 0.5
 one_shot = true
 
+[node name="Game Over Panel" parent="." instance=ExtResource("5_v3y64")]
+
+[node name="GoalHolder" type="Node" parent="."]
+script = ExtResource("6_r6nci")
+
+[node name="Goal" parent="GoalHolder" instance=ExtResource("7_x0tq7")]
+max_needed = 3
+goal_string = "blue"
+
+[node name="Win Panel" parent="." instance=ExtResource("6_vq388")]
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("9_dc5b5")
+volume_db = -12.0
+autoplay = true
+
+[connection signal="check_goal" from="grid" to="GoalHolder" method="_on_grid_check_goal"]
+[connection signal="finalwin" from="grid" to="Win Panel" method="_on_grid_finalwin"]
+[connection signal="game_over1" from="grid" to="Game Over Panel" method="_on_grid_game_over_1"]
+[connection signal="update_counter" from="grid" to="top_ui" method="_on_grid_update_counter"]
+[connection signal="update_score" from="grid" to="top_ui" method="_on_grid_update_score"]
+[connection signal="timeout" from="grid/Timer" to="grid" method="_on_timer_timeout"]
 [connection signal="timeout" from="destroy_timer" to="grid" method="_on_destroy_timer_timeout"]
 [connection signal="timeout" from="collapse_timer" to="grid" method="_on_collapse_timer_timeout"]
 [connection signal="timeout" from="refill_timer" to="grid" method="_on_refill_timer_timeout"]
+[connection signal="winner" from="GoalHolder/Goal" to="grid" method="_on_goal_winner"]

@@ -3,7 +3,7 @@ extends Node2D
 # state machine
 enum {WAIT, MOVE}
 var state
-
+var signallaunched = false
 # grid
 @export var width: int
 @export var height: int
@@ -24,6 +24,9 @@ var possible_pieces = [
 # current pieces in scene
 var all_pieces = []
 
+#Game Over
+signal game_over1
+
 # swap back
 var piece_one = null
 var piece_two = null
@@ -31,16 +34,23 @@ var last_place = Vector2.ZERO
 var last_direction = Vector2.ZERO
 var move_checked = false
 
+#win
+signal check_goal
+signal finalwin
 # touch variables
 var first_touch = Vector2.ZERO
 var final_touch = Vector2.ZERO
 var is_controlling = false
 
 # scoring variables and signals
-
+signal update_score
+@export var piece_value: int
+var streak = 1
 
 # counter variables and signals
-
+signal update_counter
+@export var current_counter_value: int
+@export var is_moves: bool
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -48,6 +58,9 @@ func _ready():
 	randomize()
 	all_pieces = make_2d_array()
 	spawn_pieces()
+	emit_signal("update_counter", current_counter_value)
+	if !is_moves:
+		$Timer.start()
 
 func make_2d_array():
 	var array = []
@@ -202,9 +215,11 @@ func destroy_matched():
 	for i in width:
 		for j in height:
 			if all_pieces[i][j] != null and all_pieces[i][j].matched:
+				emit_signal("check_goal", all_pieces[i][j].color)
 				was_matched = true
 				all_pieces[i][j].queue_free()
 				all_pieces[i][j] = null
+				emit_signal("update_score", piece_value *  streak)
 				
 	move_checked = true
 	if was_matched:
@@ -227,7 +242,7 @@ func collapse_columns():
 	get_parent().get_node("refill_timer").start()
 
 func refill_columns():
-	
+	streak += 1
 	for i in width:
 		for j in height:
 			if all_pieces[i][j] == null:
@@ -258,8 +273,13 @@ func check_after_refill():
 				get_parent().get_node("destroy_timer").start()
 				return
 	state = MOVE
-	
 	move_checked = false
+	if is_moves:
+		current_counter_value -= 1
+		emit_signal("update_counter")
+		if current_counter_value == 0:
+			declare_game_over() 
+		
 
 func _on_destroy_timer_timeout():
 	print("destroy")
@@ -271,7 +291,21 @@ func _on_collapse_timer_timeout():
 
 func _on_refill_timer_timeout():
 	refill_columns()
-	
-func game_over():
+
+
+func _on_timer_timeout():
+	current_counter_value -= 1
+	emit_signal("update_counter")
+	if current_counter_value == 0:
+		declare_game_over()
+		$Timer.stop()
+
+func declare_game_over():
+	if !signallaunched:
+		emit_signal("game_over1")
+		state = WAIT
+
+func _on_goal_winner():
+	emit_signal("finalwin")
 	state = WAIT
-	print("game over")
+	signallaunched = true
